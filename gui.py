@@ -6,7 +6,7 @@ from PIL import Image
 import tempfile
 
 # 加载YOLOv8模型
-model = YOLO('/ultralytics-8.3.91/runs/detect/train5/weights/best.pt')
+model = YOLO('runs/detect/train5/weights/best.pt')  # 假设已经有一个针对人体动作识别微调过的模型
 
 def process_image(image):
     results = model(image)
@@ -21,7 +21,7 @@ def process_image(image):
             cv2.putText(image, label, (r[0], r[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
     return image
 
-st.title("Cover Recognition System")
+st.title("Human Action Recognition System")
 
 option = st.sidebar.selectbox("Choose Input Type", ("Image", "Video", "Camera"))
 
