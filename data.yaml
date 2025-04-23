@@ -1,6 +1,6 @@
-train: /data/coding/data_train/train/images
-val: /data/coding/data_train/val/images
-test: /data/coding/data_train/test/images
+train: /Volumes/Game/data_train/train/images
+val: /Volumes/Game/data_train/val/images
+test: /Volumes/Game/data_train/test/images
  
 nc: 5
  

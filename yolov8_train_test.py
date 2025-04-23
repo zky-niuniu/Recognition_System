@@ -6,7 +6,7 @@ if __name__ == '__main__':
 	model=YOLO('/data/coding/yolov8m.pt')  #加载预训练权重
 	results = model.train(data='./data.yaml',   #数据集yaml文件
 	            imgsz=640,
-	            epochs=10, #训练轮数测试10,20,40,80,100
+	            epochs=200, #训练轮数测试10,20,40,80,100
 	            batch=16,
 	            workers=0,  
 	            device=0,   #没显卡则将0修改为'cpu'
