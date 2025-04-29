@@ -68,6 +68,9 @@ from ultralytics.nn.modules import (
     YOLOEDetect,
     YOLOESegment,
     v10Detect,
+    BasicStage,
+    PatchEmbed_FasterNet,
+    PatchMerging_FasterNet
 )
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
@@ -91,6 +94,7 @@ from ultralytics.utils.torch_utils import (
     smart_inference_mode,
     time_sync,
 )
+from ultralytics.nn.SEAttention import SEAttention
 
 try:
     import thop
@@ -223,6 +227,14 @@ class BaseModel(torch.nn.Module):
                     m.forward = m.forward_fuse
                 if isinstance(m, v10Detect):
                     m.fuse()  # remove one2many head
+                if type(m) is PatchEmbed_FasterNet:
+                    m.proj=fuse_conv_and_bn(m.proj,m.norm)
+                    delattr(m,'norm')
+                    m.forward=m.fuseforward
+                if type(m) is PatchMerging_FasterNet:
+                    m.reduction=fuse_conv_and_bn(m.reduction,m.norm)
+                    delattr(m,'norm')
+                    m.forward=m.fuseforward
             self.info(verbose=verbose)
 
         return self
@@ -1208,7 +1220,7 @@ def torch_safe_load(weight, safe_only=False):
                 with open(file, "rb") as f:
                     ckpt = torch.load(f, pickle_module=safe_pickle)
             else:
-                ckpt = torch.load(file, map_location="cpu")
+                ckpt = torch.load(file, map_location="cpu",weights_only=False)
 
     except ModuleNotFoundError as e:  # e.name is missing module name
         if e.name == "models":
@@ -1228,7 +1240,7 @@ def torch_safe_load(weight, safe_only=False):
             f"run a command with an official Ultralytics model, i.e. 'yolo predict model=yolo11n.pt'"
         )
         check_requirements(e.name)  # install missing module
-        ckpt = torch.load(file, map_location="cpu")
+        ckpt = torch.load(file, map_location="cpu",weights_only=False)
 
     if not isinstance(ckpt, dict):
         # File is likely a YOLO instance saved with i.e. torch.save(model, "saved_model.pt")
@@ -1398,6 +1410,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             SCDown,
             C2fCIB,
             A2C2f,
+            BasicStage,
+            PatchEmbed_FasterNet,
+            PatchMerging_FasterNet
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1454,6 +1469,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                     args.extend((True, 1.2))
             if m is C2fCIB:
                 legacy = False
+            elif m in [BasicStage]:
+                args.pop(1)
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in frozenset({HGStem, HGBlock}):
@@ -1478,6 +1495,10 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 m.legacy = legacy
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])
+        
+        elif m in {SEAttention}:
+            args = [ch[f], *args]
+
         elif m is CBLinear:
             c2 = args[0]
             c1 = ch[f]

@@ -59,6 +59,9 @@ from .block import (
     ResNetLayer,
     SCDown,
     TorchVision,
+    BasicStage,
+    PatchEmbed_FasterNet,
+    PatchMerging_FasterNet
 )
 from .conv import (
     CBAM,
