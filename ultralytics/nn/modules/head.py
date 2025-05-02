@@ -64,32 +64,31 @@ class Detect(nn.Module):
             self.one2one_cv3 = copy.deepcopy(self.cv3)
 
 #转换格式需要修改forward函数:
-    #def forward(self, x):
-    #    """Concatenates and returns predicted bounding boxes and class probabilities."""
-    #    if self.end2end:
-    #        return self.forward_end2end(x)
-
-    #    for i in range(self.nl):
-    #        x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
-    #    if self.training:  # Training path
-    #        return x
-    #    y = self._inference(x)
-    #    return y if self.export else (y, x)
-
-#修改为:
     def forward(self, x):
         """Concatenates and returns predicted bounding boxes and class probabilities."""
-        shape = x[0].shape  # BCHW
+        if self.end2end:
+            return self.forward_end2end(x)
         for i in range(self.nl):
             x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
-        if self.training:
+        if self.training:  # Training path
             return x
-        elif self.dynamic or self.shape != shape:
-            self.anchors, self.strides = (x.transpose(0, 1) for x in make_anchors(x, self.stride, 0.5))
-            self.shape = shape
+        y = self._inference(x)
+        return y if self.export else (y, x)
+
+#修改为:
+    #def forward(self, x):
+    #    """Concatenates and returns predicted bounding boxes and class probabilities."""
+    #    shape = x[0].shape  # BCHW
+    #    for i in range(self.nl):
+    #        x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+    #    if self.training:
+    #        return x
+    #    elif self.dynamic or self.shape != shape:
+    #        self.anchors, self.strides = (x.transpose(0, 1) for x in make_anchors(x, self.stride, 0.5))
+    #        self.shape = shape
         # 中间部分注释掉，return语句替换为
-        pred=torch.cat([xi.view(shape[0], self.no, -1) for xi in x], 2).permute(0, 2, 1)
-        return pred
+    #    pred=torch.cat([xi.view(shape[0], self.no, -1) for xi in x], 2).permute(0, 2, 1)
+    #    return pred
 
     def forward_end2end(self, x):
         """
