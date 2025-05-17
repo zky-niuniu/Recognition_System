@@ -9,7 +9,7 @@ import datetime
 import time
 
 # 配置区域 ================================================
-SAVE_DIR = "/Volumes/Game/Saved_results" #设置成你的保存地址
+SAVE_DIR = "/Volumes/Game/saved_results" #设置成你的保存地址
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # 初始化Session State
@@ -21,12 +21,9 @@ if 'last_save_time' not in st.session_state:
 # 侧边栏配置 =============================================
 st.sidebar.title("Settings")
 #权重文件地址
-MODEL_PATH = st.sidebar.text_input("Model Path", "runs/detect/attention/weights/best.pt")
+MODEL_PATH = st.sidebar.text_input("Model Path", "/runs/detect/attention/weights/best.pt")
 conf_threshold = st.sidebar.slider("Confidence Threshold", 0.1, 1.0, 0.6, 0.05)
 auto_save = st.sidebar.checkbox("Enable Auto-Save", True)
-#限制两次保存之间的最小时间间隔，避免存储耗尽与频繁IO操作导致的性能下降
-#camera模块，用不到摄像头实际上没有用处
-#ave_cooldown = st.sidebar.number_input("Save Cooldown (seconds)", 1, 60, 5)
 
 # 加载模型
 try:
@@ -124,6 +121,7 @@ def process_video(video_path, conf_threshold):
     cap.release()
     out.release()
     return output_path, detection_count
+
 # 主界面 ================================================
 st.title("Manhole Cover Recognition System")
 option = st.radio("Input Type", ("Image", "Video"), horizontal=True)
@@ -171,24 +169,46 @@ if option == "Image":
 elif option == "Video":
     uploaded_file = st.file_uploader("upload video", type=["mp4", "avi", "mov"])
     if uploaded_file is not None:
-        # 保存上传的视频到临时文件
-        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        tfile.write(uploaded_file.read())
-        
         # 显示原始视频
         st.video(uploaded_file)
         
-        if st.button("Start to progress video"):
-            with st.spinner("progressing..."):
-                start_time = time.time()
-                processed_path, detections = process_video(tfile.name, conf_threshold)
-                elapsed = time.time() - start_time
-                
-                st.success(f"progress finish! consuming: {elapsed:.2f}second | Target detected: {detections}times")
-                st.video(processed_path)
+        # 保存上传的视频到临时文件
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, uploaded_file.name)
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
         
-        # 清理临时文件
-        os.unlink(tfile.name)
+        if st.button("Start to process video"):
+            with st.spinner("Processing..."):
+                start_time = time.time()
+                try:
+                    processed_path, detections = process_video(temp_path, conf_threshold)
+                    elapsed = time.time() - start_time
+                    
+                    st.success(f"Process finished! Time taken: {elapsed:.2f} seconds | Detections: {detections}")
+                    
+                    # 显示处理后的视频
+                    with open(processed_path, "rb") as f:
+                        video_bytes = f.read()
+                    st.video(video_bytes)
+                    
+                    # 提供下载链接
+                    st.download_button(
+                        label="Download Processed Video",
+                        data=video_bytes,
+                        file_name=f"processed_{uploaded_file.name}",
+                        mime="video/mp4"
+                    )
+                except Exception as e:
+                    st.error(f"Video processing error: {e}")
+                finally:
+                    # 清理临时文件
+                    try:
+                        os.remove(temp_path)
+                        if 'processed_path' in locals():
+                            os.remove(processed_path)
+                    except Exception as e:
+                        st.warning(f"Failed to clean up temporary files: {e}")
 
 # 摄像头处理分支，可以用于后续功能扩展：
 #option = st.radio("Input Type", ("Image", "Video"), horizontal=True)加上"camera"即可
