@@ -7,9 +7,9 @@ from PIL import Image
 import tempfile
 import datetime
 import time
-
+import io 
 # 配置区域 ================================================
-SAVE_DIR = "/Volumes/Game/saved_results" #设置成你的保存地址
+SAVE_DIR = "/data/coding/saved_results" #设置成你的保存地址
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # 初始化Session State
@@ -21,7 +21,7 @@ if 'last_save_time' not in st.session_state:
 # 侧边栏配置 =============================================
 st.sidebar.title("Settings")
 #权重文件地址
-MODEL_PATH = st.sidebar.text_input("Model Path", "/runs/detect/attention/weights/best.pt")
+MODEL_PATH = st.sidebar.text_input("Model Path", "ultralytics_8/runs/detect/attention/weights/best.pt")
 conf_threshold = st.sidebar.slider("Confidence Threshold", 0.1, 1.0, 0.6, 0.05)
 auto_save = st.sidebar.checkbox("Enable Auto-Save", True)
 
@@ -134,7 +134,7 @@ if option == "Image":
         with col1:
             try:
                 original_image = Image.open(uploaded_file)
-                st.image(original_image, caption="Original Image", use_container_width=True)
+                st.image(original_image, caption="Original Image", use_container_width=True)  # 修改这里
             except Exception as e:
                 st.error(f"image load error: {e}")
         
@@ -147,21 +147,29 @@ if option == "Image":
                     image_np = cv2.cvtColor(image_np, cv2.COLOR_RGBA2RGB)
                 
                 processed_image, results = process_image(image_np, conf_threshold)
-                st.image(processed_image, caption="Processed Image", use_container_width=True)
+                st.image(processed_image, caption="Processed Image", use_container_width=True)  # 修改这里
                 
-                if st.button('Save Result'):
-                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    save_path = os.path.join(SAVE_DIR, f"result_{timestamp}.jpg")
-                    Image.fromarray(processed_image).save(save_path)
-                    st.toast(f"Saved to {save_path}", icon="✅")
+                # 将处理后的图像转换为字节流以供下载
+                processed_pil = Image.fromarray(processed_image)
+                img_byte_arr = io.BytesIO()
+                processed_pil.save(img_byte_arr, format='JPEG')
+                img_byte_arr = img_byte_arr.getvalue()
+                
+                if st.download_button(
+                    label='Download Result',
+                    data=img_byte_arr,
+                    file_name=f"processed_{uploaded_file.name}",
+                    mime="image/jpeg"
+                ):
+                    st.toast("Download started!", icon="✅")
                     
-                    # 显示检测结果
-                    if results and len(results[0].boxes) > 0:
-                        st.json({
-                            "detections": len(results[0].boxes),
-                            "classes": [model.names[int(box.cls)] for box in results[0].boxes],
-                            "confidences": [float(box.conf) for box in results[0].boxes]
-                        })
+                # 显示检测结果
+                if results and len(results[0].boxes) > 0:
+                    st.json({
+                        "detections": len(results[0].boxes),
+                        "classes": [model.names[int(box.cls)] for box in results[0].boxes],
+                        "confidences": [float(box.conf) for box in results[0].boxes]
+                    })
             except Exception as e:
                 st.error(f"image error: {e}")
 
