@@ -8,6 +8,9 @@ import tempfile
 import datetime
 import time
 import io 
+
+os.environ["TORCH_FORCE_WEIGHTS_ONLY"] = "0"
+
 # 配置区域 ================================================
 SAVE_DIR = os.path.join(tempfile.gettempdir(), "recognition_results")
 os.makedirs(SAVE_DIR, exist_ok=True)
@@ -27,7 +30,7 @@ auto_save = st.sidebar.checkbox("Enable Auto-Save", True)
 
 # 加载模型
 try:
-    model = YOLO(MODEL_PATH,weights_only=False)
+    model = YOLO(MODEL_PATH)
     st.sidebar.success("Model loaded successfully!")
 except Exception as e:
     st.error(f"Model loaded failed: {e}")
