@@ -3,3 +3,8 @@ libglib2.0-0
 libsm6
 libxrender1
 libxext6
+libgtk-3-0
+libgomp1
+libavcodec58
+libavformat58
+libswscale5
