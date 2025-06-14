@@ -27,7 +27,7 @@ auto_save = st.sidebar.checkbox("Enable Auto-Save", True)
 
 # 加载模型
 try:
-    model = YOLO(MODEL_PATH)
+    model = YOLO(MODEL_PATH,weights_only=False)
     st.sidebar.success("Model loaded successfully!")
 except Exception as e:
     st.error(f"Model loaded failed: {e}")
