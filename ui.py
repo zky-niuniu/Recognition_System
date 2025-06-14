@@ -9,8 +9,6 @@ import datetime
 import time
 import io 
 
-os.environ["TORCH_FORCE_WEIGHTS_ONLY"] = "0"
-
 # 配置区域 ================================================
 SAVE_DIR = os.path.join(tempfile.gettempdir(), "recognition_results")
 os.makedirs(SAVE_DIR, exist_ok=True)
@@ -29,12 +27,30 @@ conf_threshold = st.sidebar.slider("Confidence Threshold", 0.1, 1.0, 0.6, 0.05)
 auto_save = st.sidebar.checkbox("Enable Auto-Save", True)
 
 # 加载模型
-try:
-    model = YOLO(MODEL_PATH)
-    st.sidebar.success("Model loaded successfully!")
-except Exception as e:
-    st.error(f"Model loaded failed: {e}")
-    st.stop()
+#try:
+    #model = YOLO(MODEL_PATH)
+    #st.sidebar.success("Model loaded successfully!")
+#except Exception as e:
+    #st.error(f"Model loaded failed: {e}")
+    #st.stop()
+# 方法1：使用自定义加载函数
+def load_model(model_path):
+    # 临时修改torch.load默认参数
+    original_load = torch.load
+    torch.load = lambda *args, **kwargs: original_load(*args, **kwargs, weights_only=False)
+    
+    try:
+        model = YOLO(model_path)
+        st.sidebar.success("Model loaded successfully!")
+        return model
+    except Exception as e:
+        st.error(f"Model load failed: {e}")
+        st.stop()
+    finally:
+        # 恢复原始torch.load
+        torch.load = original_load
+# 加载模型
+model = load_model(MODEL_PATH)
 
 # 图像处理函数 ===========================================
 def process_image(image, conf_threshold):
