@@ -18,6 +18,12 @@
 # Documentation:
 # For comprehensive documentation and usage instructions, visit: https://docs.ultralytics.com
 
+[tool.poetry]
+name = "recognition_system"
+version = "0.1.0"  # 必须添加这行
+description = "recognition_system"
+authors = ["yzk zekai.yang@outlook.com"]
+
 [build-system]
 requires = ["setuptools>=70.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
