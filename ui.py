@@ -9,7 +9,7 @@ import datetime
 import time
 import io 
 # 配置区域 ================================================
-SAVE_DIR = "/Volumes/Game/saved_results" #设置成你的保存地址
+SAVE_DIR = os.path.join(tempfile.gettempdir(), "recognition_results")
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # 初始化Session State
@@ -21,7 +21,7 @@ if 'last_save_time' not in st.session_state:
 # 侧边栏配置 =============================================
 st.sidebar.title("Settings")
 #权重文件地址
-MODEL_PATH = st.sidebar.text_input("Model Path", "/Volumes/Game/ultralytics 8.3.114/runs/detect/attention/weights/best.pt")
+MODEL_PATH = st.sidebar.text_input("Model Path", "runs/detect/original/weights/best.pt")
 conf_threshold = st.sidebar.slider("Confidence Threshold", 0.1, 1.0, 0.6, 0.05)
 auto_save = st.sidebar.checkbox("Enable Auto-Save", True)
 
