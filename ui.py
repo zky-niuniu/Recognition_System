@@ -7,7 +7,8 @@ from PIL import Image
 import tempfile
 import datetime
 import time
-import io 
+import io
+import torch
 
 # 配置区域 ================================================
 SAVE_DIR = os.path.join(tempfile.gettempdir(), "recognition_results")
